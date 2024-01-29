@@ -16,20 +16,13 @@ function getFullscreenTriangle() {
 // Basic shader postprocess based on the template https://gist.github.com/RenaudRohlinger/bd5d15316a04d04380e93f10401c40e7
 // USAGE: Simply call usePostprocess hook in your r3f component to apply the shader to the canvas as a postprocess effect
 const usePostProcess = () => {
+  // @ts-ignore
   const [{ dpr }, size, gl] = useThree((s) => [s.viewport, s.size, s.gl])
 
   const [screenCamera, screenScene, screen, renderTarget] = useMemo(() => {
-    let screenScene = new THREE.Scene()
-    const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
-    const screen = new THREE.Mesh(getFullscreenTriangle())
-    screen.frustumCulled = false
-    screenScene.add(screen)
-
-    const renderTarget = new THREE.WebGLRenderTarget(512, 512, { samples: 4, encoding: gl.encoding })
-    renderTarget.depthTexture = new THREE.DepthTexture() // fix depth issues
-
-    // use ShaderMaterial for linearToOutputTexel
-    screen.material = new THREE.RawShaderMaterial({
+    let screenScene = new THREE.Scene();
+    const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const screen = new THREE.Mesh(getFullscreenTriangle(), new THREE.RawShaderMaterial({
       uniforms: {
         diffuse: { value: null },
         time: { value: 0 },
@@ -74,12 +67,22 @@ const usePostProcess = () => {
         }
       `,
       glslVersion: THREE.GLSL3,
-    })
-    screen.material.uniforms.diffuse.value = renderTarget.texture
+    }));
+    screen.frustumCulled = false;
+    screenScene.add(screen);
+
+    // @ts-ignore
+    const renderTarget = new THREE.WebGLRenderTarget(512, 512, { samples: 4, encoding: gl.encoding });
+    renderTarget.depthTexture = new THREE.DepthTexture(512, 512); // fix depth issues
+
+    // use ShaderMaterial for linearToOutputTexel
+    (screen.material as THREE.RawShaderMaterial).uniforms.diffuse.value = renderTarget.texture;
 
     return [screenCamera, screenScene, screen, renderTarget]
+    // @ts-ignore
   }, [gl.encoding])
   useEffect(() => {
+    // @ts-ignore
     const { width, height } = size
     const { w, h } = {
       w: width * dpr,
@@ -93,7 +96,7 @@ const usePostProcess = () => {
     gl.render(scene, camera)
 
     gl.setRenderTarget(null)
-    if (screen) screen.material.uniforms.time.value += delta
+    if (screen) (screen.material as THREE.RawShaderMaterial).uniforms.time.value += delta
 
     gl.render(screenScene, screenCamera)
   }, 1)

@@ -13,18 +13,20 @@ export const Common = ({ color }) => (
     <PerspectiveCamera makeDefault fov={40} position={[0, 0, 6]} />
   </Suspense>
 )
-
-const View = forwardRef(({ children, orbit, ...props }, ref) => {
+interface ViewProps extends React.HTMLProps<HTMLDivElement> {
+  children: JSX.Element;
+  orbit: boolean;
+}
+const View = forwardRef(({ children, orbit, ...props }: ViewProps, ref) => {
   const localRef = useRef(null)
   useImperativeHandle(ref, () => localRef.current)
-
   return (
     <>
       <div ref={localRef} {...props} />
       <Three>
         <ViewImpl track={localRef}>
           {children}
-          {orbit && <OrbitControls />}
+          {orbit && <OrbitControls makeDefault minPolarAngle={Math.PI / 3.5} maxPolarAngle={Math.PI - Math.PI / 3} enablePan={false} />}
         </ViewImpl>
       </Three>
     </>
